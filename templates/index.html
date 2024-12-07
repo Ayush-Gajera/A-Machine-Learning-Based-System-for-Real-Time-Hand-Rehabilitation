@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercise Data Gathering</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        #timer {
+            font-size: 2em;
+            color: red;
+            margin-top: 10px;
+        }
+        img {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            width: 640px;
+        }
+        form {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Exercise Data Gathering</h1>
+    <div>
+        <img src="{{ url_for('video_feed') }}" alt="Video Feed" width="640" height="480">
+    </div>
+    <div id="timer">0</div>
+    <form id="start-recording-form" onsubmit="handleStartRecording(event)">
+        <label for="exercise">Select Exercise:</label>
+        <select id="exercise" name="exercise">
+            <option value="Ball-Grip-Wrist-Down">Ball Grip Wrist Down</option>
+            <option value="Ball-Grip-Wrist-Up">Ball Grip Wrist Up</option>
+            <option value="Pinch">Pinch</option>
+            <option value="Thumb-Extend">Thumb Extend</option>
+            <option value="Opposition">Opposition</option>
+            <option value="Extend-Out">Extend Out</option>
+            <option value="Side-Squzzer">Side Squzzer</option>
+            <option value="Finger-Bend">Finger Bend</option>
+        </select>
+        <button type="submit">Start Recording</button>
+    </form>
+    <form id="stop-recording-form" onsubmit="handleStopRecording(event)">
+        <button type="submit">Stop Recording</button>
+    </form>
+    <script>
+        let timerInterval;
+
+        function startTimer() {
+            let timeElapsed = 0;
+            const timerElement = document.getElementById('timer');
+            timerElement.textContent = timeElapsed;
+
+            timerInterval = setInterval(() => {
+                timeElapsed++;
+                timerElement.textContent = timeElapsed;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('timer').textContent = '0';
+        }
+
+        async function handleStartRecording(event) {
+            event.preventDefault();
+            startTimer();
+            const formData = new FormData(document.getElementById('start-recording-form'));
+            const response = await fetch('/start_recording', {
+                method: 'POST',
+                body: formData
+            });
+            console.log('Recording started:', response.ok);
+        }
+
+        async function handleStopRecording(event) {
+            event.preventDefault();
+            stopTimer();
+            const response = await fetch('/stop_recording', {
+                method: 'POST'
+            });
+            console.log('Recording stopped:', response.ok);
+        }
+    </script>
+</body>
+</html>

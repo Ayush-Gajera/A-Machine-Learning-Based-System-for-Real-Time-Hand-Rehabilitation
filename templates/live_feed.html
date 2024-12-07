@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Feed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        .video-feed {
+            display: inline-block;
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live Feed - Hand Exercise Detection</h1>
+    <div class="video-feed">
+        <img src="{{ url_for('video_feed') }}" alt="Live Video Feed">
+    </div>
+    <br>
+    <a href="{{ url_for('index') }}">Back to Home</a>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercise Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        .option-button {
+            display: inline-block;
+            margin: 20px;
+            padding: 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hand Exercise Detection</h1>
+    <a href="{{ url_for('live_feed') }}" class="option-button">Start Live Feed</a>
+    <a href="{{ url_for('upload_image') }}" class="option-button">Upload Image</a>
+</body>
+</html>
