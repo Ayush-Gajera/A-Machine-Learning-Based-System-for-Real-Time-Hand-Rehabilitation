@@ -1,0 +1,34 @@
+# Python common
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Project specific virtual environment
+hand_exercise_env/
+
+# ML Models and scalers
+
+
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Project generated assets
+
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Diagnostic/Test scripts
+test_diag.py
