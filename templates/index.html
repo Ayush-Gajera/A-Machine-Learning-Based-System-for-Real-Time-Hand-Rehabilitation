@@ -868,9 +868,10 @@
                     }).join('');
                     document.getElementById('feedbackList').innerHTML = html;
 
-                    // Auto-speak
-                    if (autoSpeak && data.feedback[0]) {
-                        speakText(data.feedback[0].text, currentLanguage);
+                    // Auto-speak all active feedback items joined by a period
+                    if (autoSpeak && data.feedback.length > 0) {
+                        const fullText = data.feedback.map(f => f.text).join('. ');
+                        speakText(fullText, currentLanguage);
                     }
                 }
 

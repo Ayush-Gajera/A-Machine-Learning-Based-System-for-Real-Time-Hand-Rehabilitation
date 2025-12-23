@@ -317,6 +317,7 @@ def extract_features(landmarks):
 # ============= FEEDBACK FUNCTIONS =============
 def provide_feedback_Ball_Grip_Wrist_Down(landmarks):
     feedback = []
+    bad_fingers = set()
     update_finger_tips(landmarks)
     index_mcp = np.array([landmarks[5].x, landmarks[5].y])
     middle_mcp = np.array([landmarks[9].x, landmarks[9].y])
@@ -325,126 +326,154 @@ def provide_feedback_Ball_Grip_Wrist_Down(landmarks):
     d2 = np.linalg.norm(middle_finger_tip - middle_mcp)
     
     if d1 < 0.055 and d2 < 0.055:
-        feedback.append(get_text("Release the ball slowly."))
+        feedback.append("Release the ball slowly.")
     elif d1 > 0.06 and d2 > 0.06:
-        feedback.append(get_text("Squeeze the ball tightly."))
+        feedback.append("Squeeze the ball tightly.")
     else:
-        feedback.append(get_text("Good grip maintained."))
+        feedback.append("Good grip maintained.")
 
     if np.linalg.norm(thumb_tip - index_finger_tip) < 0.05 and np.linalg.norm(thumb_tip - middle_finger_tip) < 0.05:
-        feedback.append(get_text("Good thumb position for a strong grip."))
+        feedback.append("Good thumb position for a strong grip.")
     else:
-        feedback.append(get_text("Adjust your thumb position for a better grip."))
+        feedback.append("Adjust your thumb position for a better grip.")
+        bad_fingers.add('thumb')
 
     d_im = np.linalg.norm(index_finger_tip - middle_finger_tip)
     d_mr = np.linalg.norm(middle_finger_tip - ring_finger_tip)
     d_rp = np.linalg.norm(ring_finger_tip - pinky_finger_tip)
 
-    if d_im < 0.02: feedback.append(get_text("Index and middle fingers are too close."))
-    elif d_im > 0.05: feedback.append(get_text("Index and middle fingers are too far apart."))
-    else: feedback.append(get_text("Index and middle fingers are correctly positioned."))
+    if d_im < 0.02 or d_im > 0.05:
+        feedback.append("Index and middle fingers are too close." if d_im < 0.02 else "Index and middle fingers are too far apart.")
+        bad_fingers.update(['index', 'middle'])
+    else:
+        feedback.append("Index and middle fingers are correctly positioned.")
 
-    if d_mr < 0.02: feedback.append(get_text("Middle and ring fingers are too close."))
-    elif d_mr > 0.05: feedback.append(get_text("Middle and ring fingers are too far apart."))
-    else: feedback.append(get_text("Middle and ring fingers are correctly positioned."))
+    if d_mr < 0.02 or d_mr > 0.05:
+        feedback.append("Middle and ring fingers are too close." if d_mr < 0.02 else "Middle and ring fingers are too far apart.")
+        bad_fingers.update(['middle', 'ring'])
+    else:
+        feedback.append("Middle and ring fingers are correctly positioned.")
 
-    if d_rp < 0.02: feedback.append(get_text("Ring and pinky fingers are too close."))
-    elif d_rp > 0.05: feedback.append(get_text("Ring and pinky fingers are too far apart."))
-    else: feedback.append(get_text("Ring and pinky fingers are correctly positioned."))
+    if d_rp < 0.02 or d_rp > 0.05:
+        feedback.append("Ring and pinky fingers are too close." if d_rp < 0.02 else "Ring and pinky fingers are too far apart.")
+        bad_fingers.update(['ring', 'pinky'])
+    else:
+        feedback.append("Ring and pinky fingers are correctly positioned.")
 
-    return feedback
+    return feedback, bad_fingers
 
 def provide_feedback_Ball_Grip_Wrist_UP(landmarks):
     return provide_feedback_Ball_Grip_Wrist_Down(landmarks)  # Same logic
 
 def provide_feedback_Pinch(landmarks):
     feedback = []
+    bad_fingers = set()
     update_finger_tips(landmarks)
     
     pinch_dist = np.linalg.norm(thumb_tip - index_finger_tip)
     if pinch_dist > 0.17:
-        feedback.append(get_text("Try to bring your thumb and index finger closer."))
+        feedback.append("Try to bring your thumb and index finger closer.")
+        bad_fingers.update(['thumb', 'index'])
     else:
-        feedback.append(get_text("Good pinch! Maintain the grip."))
+        feedback.append("Good pinch! Maintain the grip.")
 
     d_im = np.linalg.norm(index_finger_tip - middle_finger_tip)
     d_mr = np.linalg.norm(middle_finger_tip - ring_finger_tip)
     d_rp = np.linalg.norm(ring_finger_tip - pinky_finger_tip)
 
-    if d_im < 0.01: feedback.append(get_text("Index and middle fingers are too close."))
-    elif d_im > 0.05: feedback.append(get_text("Index and middle fingers are too far apart."))
-    else: feedback.append(get_text("Index and middle fingers are correctly positioned."))
+    if d_im < 0.01 or d_im > 0.05:
+        feedback.append("Index and middle fingers are too close." if d_im < 0.01 else "Index and middle fingers are too far apart.")
+        bad_fingers.update(['index', 'middle'])
+    else:
+        feedback.append("Index and middle fingers are correctly positioned.")
 
-    if d_mr < 0.01: feedback.append(get_text("Middle and ring fingers are too close."))
-    elif d_mr > 0.05: feedback.append(get_text("Middle and ring fingers are too far apart."))
-    else: feedback.append(get_text("Middle and ring fingers are correctly positioned."))
+    if d_mr < 0.01 or d_mr > 0.05:
+        feedback.append("Middle and ring fingers are too close." if d_mr < 0.01 else "Middle and ring fingers are too far apart.")
+        bad_fingers.update(['middle', 'ring'])
+    else:
+        feedback.append("Middle and ring fingers are correctly positioned.")
 
-    if d_rp < 0.01: feedback.append(get_text("Ring and pinky fingers are too close."))
-    elif d_rp > 0.07: feedback.append(get_text("Ring and pinky fingers are too far apart."))
-    else: feedback.append(get_text("Ring and pinky fingers are correctly positioned."))
+    if d_rp < 0.01 or d_rp > 0.07:
+        feedback.append("Ring and pinky fingers are too close." if d_rp < 0.01 else "Ring and pinky fingers are too far apart.")
+        bad_fingers.update(['ring', 'pinky'])
+    else:
+        feedback.append("Ring and pinky fingers are correctly positioned.")
 
-    return feedback
+    return feedback, bad_fingers
 
 def provide_feedback_Thumb_Extend(landmarks):
     feedback = []
+    bad_fingers = set()
     update_finger_tips(landmarks)
     index_mcp = np.array([landmarks[5].x, landmarks[5].y])
     middle_mcp = np.array([landmarks[9].x, landmarks[9].y])
-    ring_mcp = np.array([landmarks[13].x, landmarks[13].y])
 
+    err = False
     if np.linalg.norm(thumb_ip - index_mcp) > 0.07:
-        feedback.append(get_text("Thumb center is far from index finger base; squeeze tighter."))
+        feedback.append("Thumb center is far from index finger base; squeeze tighter.")
+        err = True
     else:
-        feedback.append(get_text("Good distance between thumb center and index finger base."))
+        feedback.append("Good distance between thumb center and index finger base.")
 
     if np.linalg.norm(thumb_ip - middle_mcp) >= 0.065:
-        feedback.append(get_text("Thumb center is far from middle finger base; move closer."))
+        feedback.append("Thumb center is far from middle finger base; move closer.")
+        err = True
     else:
-        feedback.append(get_text("Good thumb center position relative to middle finger base."))
+        feedback.append("Good thumb center position relative to middle finger base.")
 
     if np.linalg.norm(thumb_tip - index_mcp) > 0.085:
-        feedback.append(get_text("Thumb tip is too far from index finger base; bring closer."))
+        feedback.append("Thumb tip is too far from index finger base; bring closer.")
+        err = True
     else:
-        feedback.append(get_text("Good thumb tip position relative to index finger base."))
+        feedback.append("Good thumb tip position relative to index finger base.")
 
     if np.linalg.norm(thumb_tip - middle_mcp) > 0.08:
-        feedback.append(get_text("Thumb tip is too far from middle finger base; bring closer."))
+        feedback.append("Thumb tip is too far from middle finger base; bring closer.")
+        err = True
     else:
-        feedback.append(get_text("Good thumb tip position relative to middle finger base."))
+        feedback.append("Good thumb tip position relative to middle finger base.")
 
-    return feedback
+    if err: bad_fingers.add('thumb')
+    return feedback, bad_fingers
 
 def provide_feedback_Opposition(landmarks):
     feedback = []
+    bad_fingers = set()
     update_finger_tips(landmarks)
     index_mcp = np.array([landmarks[5].x, landmarks[5].y])
     middle_mcp = np.array([landmarks[9].x, landmarks[9].y])
-    ring_mcp = np.array([landmarks[13].x, landmarks[13].y])
     
+    err = False
     if np.linalg.norm(thumb_ip - index_mcp) > 0.095:
-        feedback.append(get_text("Thumb center is far from index finger base; squeeze tighter."))
+        feedback.append("Thumb center is far from index finger base; squeeze tighter.")
+        err = True
     else:
-        feedback.append(get_text("Good distance between thumb center and index finger base."))
+        feedback.append("Good distance between thumb center and index finger base.")
     
     if np.linalg.norm(thumb_ip - middle_mcp) >= 0.06:
-        feedback.append(get_text("Thumb center is far from middle finger base; move closer."))
+        feedback.append("Thumb center is far from middle finger base; move closer.")
+        err = True
     else:
-        feedback.append(get_text("Good thumb center position relative to middle finger base."))
+        feedback.append("Good thumb center position relative to middle finger base.")
     
     if np.linalg.norm(thumb_tip - index_mcp) > 0.1:
-        feedback.append(get_text("Thumb tip is too far from index finger base; bring closer."))
+        feedback.append("Thumb tip is too far from index finger base; bring closer.")
+        err = True
     else:
-        feedback.append(get_text("Good thumb tip position relative to index finger base."))
+        feedback.append("Good thumb tip position relative to index finger base.")
     
     if np.linalg.norm(thumb_tip - middle_mcp) > 0.09:
-        feedback.append(get_text("Thumb tip is too far from middle finger base; bring closer."))
+        feedback.append("Thumb tip is too far from middle finger base; bring closer.")
+        err = True
     else:
-        feedback.append(get_text("Good thumb tip position relative to middle finger base."))
+        feedback.append("Good thumb tip position relative to middle finger base.")
     
-    return feedback
+    if err: bad_fingers.add('thumb')
+    return feedback, bad_fingers
 
 def provide_feedback_Extend_Out(landmarks):
     feedback = []
+    bad_fingers = set()
     update_finger_tips(landmarks)
     index_mcp = np.array([landmarks[5].x, landmarks[5].y])
     ring_dip = np.array([landmarks[15].x, landmarks[15].y])
@@ -454,24 +483,35 @@ def provide_feedback_Extend_Out(landmarks):
     d_ti = np.linalg.norm(thumb_tip - index_mcp)
     d_pr = np.linalg.norm(ring_dip - pinky_finger_tip)
     
-    if d_im >= 0.05: feedback.append(get_text("Keep index and middle finger attached!"))
-    else: feedback.append(get_text("Index and middle finger are properly attached."))
+    if d_im >= 0.05:
+        feedback.append("Keep index and middle finger attached!")
+        bad_fingers.update(['index', 'middle'])
+    else:
+        feedback.append("Index and middle finger are properly attached.")
     
-    if d_mr >= 0.07: feedback.append(get_text("Keep middle and ring finger attached!"))
-    else: feedback.append(get_text("Middle and ring finger are properly attached."))
+    if d_mr >= 0.07:
+        feedback.append("Keep middle and ring finger attached!")
+        bad_fingers.update(['middle', 'ring'])
+    else:
+        feedback.append("Middle and ring finger are properly attached.")
     
-    if d_ti <= 0.06: feedback.append(get_text("Keep thumb and index finger base far apart!"))
-    elif d_ti <= 0.15: feedback.append(get_text("Good distance maintained for thumb."))
-    else: feedback.append(get_text("Thumb is too far; bend it and keep close!"))
+    if d_ti <= 0.06 or d_ti > 0.15:
+        feedback.append("Keep thumb and index finger base far apart!" if d_ti <= 0.06 else "Thumb is too far; bend it and keep close!")
+        bad_fingers.add('thumb')
+    else:
+        feedback.append("Good distance maintained for thumb.")
     
-    if d_pr <= 0.08: feedback.append(get_text("Keep ring finger and pinky far apart!"))
-    elif d_pr <= 0.14: feedback.append(get_text("Good distance maintained for pinky finger."))
-    else: feedback.append(get_text("Pinky is too far from ring finger; keep close!"))
+    if d_pr <= 0.08 or d_pr > 0.14:
+        feedback.append("Keep ring finger and pinky far apart!" if d_pr <= 0.08 else "Pinky is too far from ring finger; keep close!")
+        bad_fingers.add('pinky')
+    else:
+        feedback.append("Good distance maintained for pinky finger.")
     
-    return feedback
+    return feedback, bad_fingers
 
 def provide_feedback_Finger_Bend(landmarks):
     feedback = []
+    bad_fingers = set()
     update_finger_tips(landmarks)
     
     d_im = np.linalg.norm(index_finger_tip - middle_finger_tip)
@@ -482,65 +522,91 @@ def provide_feedback_Finger_Bend(landmarks):
     d_tr = np.linalg.norm(thumb_tip - ring_finger_tip)
     d_tp = np.linalg.norm(thumb_tip - pinky_finger_tip)
     
-    if d_im >= 0.06: feedback.append(get_text("Keep index and middle finger close!"))
-    else: feedback.append(get_text("Index and middle finger are properly aligned."))
+    if d_im >= 0.06:
+        feedback.append("Keep index and middle finger close!")
+        bad_fingers.update(['index', 'middle'])
+    else:
+        feedback.append("Index and middle finger are properly aligned.")
     
-    if d_mr >= 0.06: feedback.append(get_text("Keep middle and ring finger close!"))
-    else: feedback.append(get_text("Middle and ring finger are properly aligned."))
+    if d_mr >= 0.06:
+        feedback.append("Keep middle and ring finger close!")
+        bad_fingers.update(['middle', 'ring'])
+    else:
+        feedback.append("Middle and ring finger are properly aligned.")
     
-    if d_rp >= 0.06: feedback.append(get_text("Keep ring and pinky finger close!"))
-    else: feedback.append(get_text("Ring and pinky finger are properly aligned."))
+    if d_rp >= 0.06:
+        feedback.append("Keep ring and pinky finger close!")
+        bad_fingers.update(['ring', 'pinky'])
+    else:
+        feedback.append("Ring and pinky finger are properly aligned.")
     
-    if d_ti >= 0.085: feedback.append(get_text("Keep index finger and thumb close!"))
-    else: feedback.append(get_text("Index finger and thumb are properly aligned."))
+    if d_ti >= 0.085:
+        feedback.append("Keep index finger and thumb close!")
+        bad_fingers.update(['index', 'thumb'])
+    else:
+        feedback.append("Index finger and thumb are properly aligned.")
     
-    if d_tm >= 0.085: feedback.append(get_text("Keep middle finger and thumb close!"))
-    else: feedback.append(get_text("Middle finger and thumb are properly aligned."))
+    if d_tm >= 0.085:
+        feedback.append("Keep middle finger and thumb close!")
+        bad_fingers.update(['middle', 'thumb'])
+    else:
+        feedback.append("Middle finger and thumb are properly aligned.")
     
-    if d_tr >= 0.085: feedback.append(get_text("Keep ring finger and thumb close!"))
-    else: feedback.append(get_text("Ring finger and thumb are properly aligned."))
+    if d_tr >= 0.085:
+        feedback.append("Keep ring finger and thumb close!")
+        bad_fingers.update(['ring', 'thumb'])
+    else:
+        feedback.append("Ring finger and thumb are properly aligned.")
     
-    if d_tp >= 0.085: feedback.append(get_text("Keep pinky finger and thumb close!"))
-    else: feedback.append(get_text("Pinky finger and thumb are properly aligned."))
+    if d_tp >= 0.085:
+        feedback.append("Keep pinky finger and thumb close!")
+        bad_fingers.update(['pinky', 'thumb'])
+    else:
+        feedback.append("Pinky finger and thumb are properly aligned.")
     
-    return feedback
+    return feedback, bad_fingers
 
 def provide_feedback_Side_Squzzer(landmarks):
     feedback = []
+    bad_fingers = set()
     update_finger_tips(landmarks)
     
     d_im = np.linalg.norm(index_finger_tip - middle_finger_tip)
     if d_im > 0.05:
-        feedback.append(get_text("Squeeze tighter between index and middle finger."))
+        feedback.append("Squeeze tighter between index and middle finger.")
+        bad_fingers.update(['index', 'middle'])
     else:
-        feedback.append(get_text("Great squeeze! Now release and repeat."))
+        feedback.append("Great squeeze! Now release and repeat.")
     
     t_tip = np.array([landmarks[4].x, landmarks[4].y])
     i_pip = np.array([landmarks[6].x, landmarks[6].y])
     d_thumb = min(np.linalg.norm(t_tip - i_pip), np.linalg.norm(t_tip - middle_finger_tip))
     
     if d_thumb >= 0.045:
-        feedback.append(get_text("Keep thumb attached with squeezing fingers."))
+        feedback.append("Keep thumb attached with squeezing fingers.")
+        bad_fingers.add('thumb')
     else:
-        feedback.append(get_text("Good thumb position with squeezing fingers."))
+        feedback.append("Good thumb position with squeezing fingers.")
     
     ring_mcp = np.array([landmarks[13].x, landmarks[13].y])
     pinky_mcp = np.array([landmarks[17].x, landmarks[17].y])
     
     if np.linalg.norm(ring_finger_tip - ring_mcp) >= 0.04:
-        feedback.append(get_text("Bend your ring finger more inward."))
+        feedback.append("Bend your ring finger more inward.")
+        bad_fingers.add('ring')
     else:
-        feedback.append(get_text("Good bending of ring finger."))
+        feedback.append("Good bending of ring finger.")
     
     if np.linalg.norm(pinky_finger_tip - pinky_mcp) >= 0.04:
-        feedback.append(get_text("Bend your pinky finger more inward."))
+        feedback.append("Bend your pinky finger more inward.")
+        bad_fingers.add('pinky')
     else:
-        feedback.append(get_text("Good bending of pinky finger."))
+        feedback.append("Good bending of pinky finger.")
     
-    return feedback
+    return feedback, bad_fingers
 
 def default_feedback(landmarks):
-    return [get_text("Position your hand clearly in front of the camera.")]
+    return [("Position your hand clearly in front of the camera.")], set()
 
 FEEDBACK_FUNCTIONS = {
     "Ball-Grip-Wrist-Down": provide_feedback_Ball_Grip_Wrist_Down,
@@ -552,6 +618,101 @@ FEEDBACK_FUNCTIONS = {
     "Finger-Bend": provide_feedback_Finger_Bend,
     "Side-Squzzer": provide_feedback_Side_Squzzer,
 }
+
+# ============= VIDEO CAMERA =============
+class VideoCamera:
+    def __init__(self):
+        self.video = None
+        self.is_running = False
+        self.current_exercise = None
+        self.current_feedback = []
+        self.lock = Lock()
+        self.timer_status = {}
+        
+    def start(self):
+        if not self.is_running:
+            self.video = cv2.VideoCapture(0)
+            self.video.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            self.video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            self.is_running = True
+            stabilizer.reset()
+            
+    def stop(self):
+        if self.video:
+            self.video.release()
+        self.is_running = False
+        self.current_exercise = None
+        self.current_feedback = []
+        self.timer_status = {}
+        intelligent_timer._reset()
+        
+# ============= CUSTOM DRAWING =============
+def draw_custom_landmarks(frame, landmarks, bad_fingers):
+    h, w, _ = frame.shape
+    
+    # Define finger groups and connections
+    finger_groups = {
+        'thumb': [1, 2, 3, 4],
+        'index': [5, 6, 7, 8],
+        'middle': [9, 10, 11, 12],
+        'ring': [13, 14, 15, 16],
+        'pinky': [17, 18, 19, 20]
+    }
+    
+    connections = [
+        # Palm
+        (0, 1), (0, 5), (9, 13), (13, 17), (5, 9), (0, 17),
+        # Thumb
+        (1, 2), (2, 3), (3, 4),
+        # Index
+        (5, 6), (6, 7), (7, 8),
+        # Middle
+        (9, 10), (10, 11), (11, 12),
+        # Ring
+        (13, 14), (14, 15), (15, 16),
+        # Pinky
+        (17, 18), (18, 19), (19, 20)
+    ]
+
+    # Colors (BGR)
+    GREEN = (0, 255, 0)
+    RED = (0, 0, 255)
+    WHITE = (255, 255, 255)
+
+    # Convert landmarks to pixel coordinates
+    points = []
+    for lm in landmarks:
+        points.append((int(lm.x * w), int(lm.y * h)))
+
+    # Draw connections
+    for p1_idx, p2_idx in connections:
+        color = GREEN
+        
+        # If either point is part of a bad finger (excluding palm joints), color connection red
+        is_palm_connection = p1_idx == 0 or (p1_idx in [5, 9, 13] and p2_idx in [9, 13, 17])
+        
+        if not is_palm_connection:
+            for finger, lms in finger_groups.items():
+                if finger in bad_fingers:
+                    if p1_idx in lms or p2_idx in lms:
+                        # Exclude structural connections from red color
+                        if not (p1_idx in [1, 5, 9, 13, 17] and p2_idx in [1, 5, 9, 13, 17]):
+                            color = RED
+                            break
+        
+        cv2.line(frame, points[p1_idx], points[p2_idx], color, 2)
+
+    # Draw landmarks
+    for i, pt in enumerate(points):
+        color = GREEN
+        for finger, lms in finger_groups.items():
+            if finger in bad_fingers and i in lms:
+                if i not in [1, 5, 9, 13, 17]:
+                    color = RED
+                break
+        
+        cv2.circle(frame, pt, 4, color, -1)
+        cv2.circle(frame, pt, 5, WHITE, 1)
 
 # ============= VIDEO CAMERA =============
 class VideoCamera:
@@ -593,16 +754,9 @@ class VideoCamera:
         results = hands.process(rgb_frame)
         
         exercise = None
-        feedback_list = []
         
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
-                mp_drawing.draw_landmarks(
-                    frame, hand_landmarks, mp_hands.HAND_CONNECTIONS,
-                    mp_drawing_styles.get_default_hand_landmarks_style(),
-                    mp_drawing_styles.get_default_hand_connections_style()
-                )
-                
                 landmarks = list(hand_landmarks.landmark)
                 features = extract_features(landmarks)
                 features_scaled = scaler.transform([features])
@@ -610,28 +764,48 @@ class VideoCamera:
                 raw_pred = model.predict(features_scaled)[0]
                 exercise = stabilizer.add_prediction(raw_pred)
                 
+                bad_fingers = set()
                 if exercise:
                     feedback_func = FEEDBACK_FUNCTIONS.get(exercise, default_feedback)
-                    # Get raw English feedback for logic processing
-                    raw_feedback = feedback_func(landmarks)
-                    
-                    # Update timer using RAW English feedback
+                    raw_feedback, bad_fingers = feedback_func(landmarks)
                     timer_status = intelligent_timer.update(exercise, raw_feedback)
                     
-                    # Translate feedback for the UI/TTS just before saving
-                    # Return list of dicts: {'text': translated, 'type': 'good'|'warning'}
-                    translated_feedback = []
-                    for fb in raw_feedback:
+                    raw_feedback_items = []
+                    for i, fb in enumerate(raw_feedback):
                         is_good = any(w in fb.lower() for w in ['good', 'great', 'properly', 'correctly', 'maintain', 'excellent', 'perfect', 'aligned', 'attached', 'maintaned'])
-                        translated_feedback.append({
-                            'text': get_text(fb),
-                            'type': 'good' if is_good else 'warning'
-                        })
+                        raw_feedback_items.append({'text': fb, 'is_good': is_good, 'is_primary': (i == 0)})
+
+                    primary_item = raw_feedback_items[0]
+                    status_items = raw_feedback_items[1:]
+                    
+                    warnings = [item for item in status_items if not item['is_good']]
+                    
+                    if warnings:
+                        selected_items = warnings
+                    else:
+                        selected_items = [primary_item]
+                    
+                    final_items = []
+                    seen_texts = set()
+                    for item in selected_items:
+                        if item['text'] not in seen_texts:
+                            final_items.append({
+                                'text': get_text(item['text']),
+                                'type': 'good' if item['is_good'] else 'warning'
+                            })
+                            seen_texts.add(item['text'])
                     
                     with self.lock:
                         self.current_exercise = exercise
-                        self.current_feedback = translated_feedback
+                        self.current_feedback = final_items
                         self.timer_status = timer_status
+                else:
+                    timer_status = intelligent_timer.update(None, [])
+                    with self.lock:
+                        self.timer_status = timer_status
+                
+                # Draw landmarks with dynamic coloring
+                draw_custom_landmarks(frame, landmarks, bad_fingers)
         else:
             timer_status = intelligent_timer.update(None, [])
             with self.lock:
