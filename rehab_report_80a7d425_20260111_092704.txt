@@ -1,0 +1,33 @@
+================================================================================
+HAND REHABILITATION SESSION REPORT
+================================================================================
+
+SESSION INFORMATION
+--------------------------------------------------------------------------------
+Session ID: 80a7d425-d6a6-4f1a-8431-ae339d0e156b
+Patient ID: default
+Start Time: 2026-01-11T09:25:57.479925
+End Time: 2026-01-11T09:26:59.911855
+Duration: 1.0 minutes
+
+OVERALL PERFORMANCE
+--------------------------------------------------------------------------------
+Total Exercise Attempts: 0
+Successful Completions: 0
+Success Rate: 0.0%
+Exercises Practiced: 0
+
+DETAILED EXERCISE ANALYSIS
+================================================================================
+================================================================================
+CLINICAL OBSERVATIONS & RECOMMENDATIONS
+================================================================================
+
+No significant joint issues detected. Patient showing good form overall.
+
+Performance Level: Needs Improvement
+  Recommend additional sessions focusing on proper form before increasing difficulty.
+
+================================================================================
+END OF REPORT
+================================================================================

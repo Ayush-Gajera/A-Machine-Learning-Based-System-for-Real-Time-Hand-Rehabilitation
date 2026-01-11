@@ -1,0 +1,92 @@
+{
+  "sessions": [
+    {
+      "session_id": "80a7d425-d6a6-4f1a-8431-ae339d0e156b",
+      "patient_id": "default",
+      "start_time": "2026-01-11T09:25:57.479925",
+      "end_time": "2026-01-11T09:26:59.911855",
+      "exercises": {},
+      "total_attempts": 0,
+      "total_completions": 0,
+      "duration_seconds": 62.43193054199219
+    },
+    {
+      "session_id": "df3341be-ab78-44e1-9964-eaf2580cadd2",
+      "patient_id": "default",
+      "start_time": "2026-01-11T09:32:14.601443",
+      "end_time": "2026-01-11T09:33:59.893222",
+      "exercises": {
+        "Thumb-Extend": {
+          "attempts": [
+            {
+              "timestamp": "2026-01-11T09:32:33.249826",
+              "completed": true,
+              "form_quality": 100.0,
+              "duration": 10,
+              "feedback_details": {
+                "bad_fingers": []
+              }
+            }
+          ],
+          "total_attempts": 1,
+          "total_completions": 1,
+          "avg_form_quality": 100.0,
+          "avg_completion_time": 10.0,
+          "best_form_quality": 100.0,
+          "joint_issues": {}
+        },
+        "Side-Squzzer": {
+          "attempts": [
+            {
+              "timestamp": "2026-01-11T09:33:08.431178",
+              "completed": true,
+              "form_quality": 100.0,
+              "duration": 10,
+              "feedback_details": {
+                "bad_fingers": []
+              }
+            }
+          ],
+          "total_attempts": 1,
+          "total_completions": 1,
+          "avg_form_quality": 100.0,
+          "avg_completion_time": 10.0,
+          "best_form_quality": 100.0,
+          "joint_issues": {}
+        },
+        "Finger-Bend": {
+          "attempts": [
+            {
+              "timestamp": "2026-01-11T09:33:55.314840",
+              "completed": true,
+              "form_quality": 60,
+              "duration": 10,
+              "feedback_details": {
+                "bad_fingers": [
+                  "thumb",
+                  "pinky",
+                  "ring",
+                  "middle"
+                ]
+              }
+            }
+          ],
+          "total_attempts": 1,
+          "total_completions": 1,
+          "avg_form_quality": 60.0,
+          "avg_completion_time": 10.0,
+          "best_form_quality": 60,
+          "joint_issues": {
+            "thumb": 1,
+            "pinky": 1,
+            "ring": 1,
+            "middle": 1
+          }
+        }
+      },
+      "total_attempts": 3,
+      "total_completions": 3,
+      "duration_seconds": 105.2917788028717
+    }
+  ]
+}

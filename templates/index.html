@@ -633,6 +633,21 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
+
+                <!-- Session Controls -->
+                <div class="interactive-toggle" style="margin-top: 1rem; border: 2px solid var(--accent);">
+                    <div class="toggle-label">
+                        <span>📊</span>
+                        <span id="sessionStatusText">No Active Session</span>
+                    </div>
+                    <button class="btn btn-primary" id="startSessionBtn" onclick="startSession()"
+                        style="margin-left: auto; font-size: 0.85rem; padding: 0.4rem 0.8rem;">Start Session</button>
+                    <button class="btn btn-danger" id="endSessionBtn" onclick="endSession()" disabled
+                        style="margin-left: 0.5rem; font-size: 0.85rem; padding: 0.4rem 0.8rem;">End Session</button>
+                    <button class="btn btn-primary" id="downloadReportBtn" onclick="downloadReport()"
+                        style="margin-left: 0.5rem; font-size: 0.85rem; padding: 0.4rem 0.8rem;">📄 Download
+                        Report</button>
+                </div>
             </section>
 
             <!-- Side Panel -->
@@ -755,7 +770,14 @@
         // Start camera
         async function startCamera() {
             try {
-                await fetch('/start_camera', { method: 'POST' });
+                const response = await fetch('/start_camera', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.status === 'error') {
+                    alert('Error: ' + data.message + '. Please ensure your webcam is connected.');
+                    return;
+                }
+
                 isRunning = true;
                 document.getElementById('videoPlaceholder').style.display = 'none';
                 document.getElementById('videoFeed').style.display = 'block';
@@ -765,7 +787,10 @@
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
                 statusInterval = setInterval(updateStatus, 200);
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+                alert('An unexpected error occurred while starting the camera.');
+            }
         }
 
         // Stop camera
@@ -953,12 +978,113 @@
             btn.classList.toggle('active', autoSpeak);
         }
 
+        // Session Management Functions
+        async function startSession() {
+            try {
+                const response = await fetch('/start_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('sessionStatusText').textContent = 'Session Active';
+                    document.getElementById('startSessionBtn').disabled = true;
+                    document.getElementById('endSessionBtn').disabled = false;
+                    alert('Session started! Exercise attempts will now be tracked.');
+                }
+            } catch (e) {
+                console.error('Error starting session:', e);
+                alert('Failed to start session');
+            }
+        }
+
+        async function endSession() {
+            try {
+                const response = await fetch('/end_session', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const summary = data.summary;
+                    document.getElementById('sessionStatusText').textContent = 'No Active Session';
+                    document.getElementById('startSessionBtn').disabled = false;
+                    document.getElementById('endSessionBtn').disabled = true;
+
+                    // Show session summary
+                    const message = `Session Summary:
+Duration: ${summary.duration_minutes} minutes
+Total Attempts: ${summary.total_attempts}
+Completed: ${summary.total_completions}
+Success Rate: ${summary.completion_rate}%
+Exercises: ${summary.exercises_practiced}`;
+                    alert(message);
+                }
+            } catch (e) {
+                console.error('Error ending session:', e);
+                alert('Failed to end session');
+            }
+        }
+
+        // Check session status on page load
+        async function checkSessionStatus() {
+            try {
+                const response = await fetch('/session_status');
+                const data = await response.json();
+
+                if (data.active) {
+                    document.getElementById('sessionStatusText').textContent = 'Session Active';
+                    document.getElementById('startSessionBtn').disabled = true;
+                    document.getElementById('endSessionBtn').disabled = false;
+                }
+            } catch (e) {
+                console.error('Error checking session status:', e);
+            }
+        }
+
+        async function downloadReport() {
+            try {
+                const response = await fetch('/generate_report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ export_file: true })
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Download as text file
+                    const blob = new Blob([data.report], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename || 'rehab_report.txt';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    alert('Report downloaded successfully!\nFile: ' + (data.filename || 'rehab_report.txt'));
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to generate report'));
+                }
+            } catch (e) {
+                console.error('Error downloading report:', e);
+                alert('Failed to download report');
+            }
+        }
+
         // Cleanup
         window.addEventListener('beforeunload', () => {
             if (isRunning) fetch('/stop_camera', { method: 'POST' });
         });
 
-        init();
+        // Initialize on load
+        window.addEventListener('load', () => {
+            init();
+            checkSessionStatus();
+        });
     </script>
 </body>
 

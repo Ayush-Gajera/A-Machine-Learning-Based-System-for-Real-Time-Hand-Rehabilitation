@@ -1,0 +1,84 @@
+================================================================================
+HAND REHABILITATION SESSION REPORT
+================================================================================
+
+SESSION INFORMATION
+--------------------------------------------------------------------------------
+Session ID: df3341be-ab78-44e1-9964-eaf2580cadd2
+Patient ID: default
+Start Time: 2026-01-11T09:32:14.601443
+End Time: 2026-01-11T09:33:59.893222
+Duration: 1.8 minutes
+
+OVERALL PERFORMANCE
+--------------------------------------------------------------------------------
+Total Exercise Attempts: 3
+Successful Completions: 3
+Success Rate: 100.0%
+Exercises Practiced: 3
+
+DETAILED EXERCISE ANALYSIS
+================================================================================
+
+Exercise: Thumb Extend
+--------------------------------------------------------------------------------
+  Attempts: 1
+  Completions: 1
+  Success Rate: 100.0%
+  Average Form Quality: 100.0%
+  Best Form Quality: 100.0%
+  Average Completion Time: 10.0s
+
+  Attempt Timeline:
+    1. [09:32:33] ✓ Completed - Form Quality: 100%
+
+
+Exercise: Side Squzzer
+--------------------------------------------------------------------------------
+  Attempts: 1
+  Completions: 1
+  Success Rate: 100.0%
+  Average Form Quality: 100.0%
+  Best Form Quality: 100.0%
+  Average Completion Time: 10.0s
+
+  Attempt Timeline:
+    1. [09:33:08] ✓ Completed - Form Quality: 100%
+
+
+Exercise: Finger Bend
+--------------------------------------------------------------------------------
+  Attempts: 1
+  Completions: 1
+  Success Rate: 100.0%
+  Average Form Quality: 60.0%
+  Best Form Quality: 60.0%
+  Average Completion Time: 10.0s
+
+  Joint/Finger Issues Detected:
+    - Thumb: 1 times (100% of attempts)
+    - Pinky: 1 times (100% of attempts)
+    - Ring: 1 times (100% of attempts)
+    - Middle: 1 times (100% of attempts)
+
+  Attempt Timeline:
+    1. [09:33:55] ✓ Completed - Form Quality: 60%
+       Issues: thumb, pinky, ring, middle
+
+================================================================================
+CLINICAL OBSERVATIONS & RECOMMENDATIONS
+================================================================================
+
+Most Common Joint/Finger Issues:
+  - Thumb: 1 total occurrences across all exercises
+  - Pinky: 1 total occurrences across all exercises
+  - Ring: 1 total occurrences across all exercises
+
+Recommendation: Focus additional therapy on the above joints/fingers.
+
+Performance Level: Excellent
+  Patient shows strong performance. Consider progressing to more challenging exercises.
+
+================================================================================
+END OF REPORT
+================================================================================

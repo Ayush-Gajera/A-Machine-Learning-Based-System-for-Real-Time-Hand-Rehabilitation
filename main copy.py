@@ -14,8 +14,6 @@ import mediapipe as mp
 from threading import Lock
 from PIL import Image
 from translations import TRANSLATIONS
-from session_manager import SessionManager
-from report_generator import generate_physiotherapist_report, export_report_to_file
 
 # Global language setting
 CURRENT_LANGUAGE = "en"
@@ -94,7 +92,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 hands = mp_hands.Hands(
     static_image_mode=False,
-    max_num_hands=2,  # Enable bilateral hand tracking
+    max_num_hands=1,
     min_detection_confidence=0.7,
     min_tracking_confidence=0.7
 )
@@ -120,9 +118,6 @@ def update_finger_tips(landmarks):
     pinky_finger_tip = np.array([landmarks[20].x, landmarks[20].y])
     thumb_ip = np.array([landmarks[3].x, landmarks[3].y])
 
-# ============= SESSION MANAGER =============
-session_manager = SessionManager()
-
 # ============= INTELLIGENT AUTO-TIMER =============
 class IntelligentTimer:
     """
@@ -139,17 +134,12 @@ class IntelligentTimer:
         self.consecutive_good_frames = 0
         self.frames_to_start = 10  # Need ~0.3 sec good form to start
         
-        # Track feedback during countdown for reporting
-        self.feedback_history = []
-        self.bad_fingers_history = []
-        self.just_completed = False  # Flag for one-time completion event
-        
     def enable(self, enabled=True):
         self.enabled = enabled
         if not enabled:
             self._reset()
     
-    def update(self, exercise, feedback_list, bad_fingers=None):
+    def update(self, exercise, feedback_list):
         """Update timer based on exercise and feedback quality."""
         if not self.enabled:
             return self._get_status("disabled")
@@ -171,18 +161,10 @@ class IntelligentTimer:
         if is_good:
             self.consecutive_good_frames += 1
             
-            # Track feedback during countdown
-            if self.is_counting:
-                self.feedback_history.append(feedback_list)
-                if bad_fingers:
-                    self.bad_fingers_history.append(bad_fingers)
-            
             # Start counting after consistent good form
             if self.consecutive_good_frames >= self.frames_to_start and not self.is_counting and not self.completed:
                 self.is_counting = True
                 self.hold_start_time = time.time()
-                self.feedback_history = []
-                self.bad_fingers_history = []
             
             # Check if completed
             if self.is_counting and not self.completed:
@@ -190,7 +172,6 @@ class IntelligentTimer:
                 if elapsed >= self.hold_duration:
                     self.completed = True
                     self.is_counting = False
-                    self.just_completed = True  # Flag this completion
                     return self._get_status("completed")
                 return self._get_status("counting")
             
@@ -202,47 +183,9 @@ class IntelligentTimer:
             # Bad form - reset counter but keep exercise
             self.consecutive_good_frames = 0
             if self.is_counting:
-                # Only reset if we haven't reached at least 8 seconds (filter noise)
-                elapsed = time.time() - self.hold_start_time if self.hold_start_time else 0
-                if elapsed < 8:
-                    # Noise - discard this attempt
-                    self.is_counting = False
-                    self.hold_start_time = None
-                    self.feedback_history = []
-                    self.bad_fingers_history = []
-                else:
-                    # Valid attempt but form broke - could still log as partial
-                    pass
+                self.is_counting = False
+                self.hold_start_time = None
             return self._get_status("bad_form")
-    
-    def get_completion_data(self):
-        """Get detailed data from the just-completed timer session"""
-        if not self.just_completed:
-            return None
-        
-        # Calculate form quality from feedback history
-        form_quality = 100.0  # Start at 100%
-        all_bad_fingers = set()
-        
-        for bad_fingers in self.bad_fingers_history:
-            all_bad_fingers.update(bad_fingers)
-        
-        # Reduce quality based on how many different joints had issues
-        if all_bad_fingers:
-            form_quality = max(50, 100 - len(all_bad_fingers) * 10)
-        
-        data = {
-            'exercise': self.current_exercise,
-            'duration': self.hold_duration,
-            'form_quality': form_quality,
-            'bad_fingers': list(all_bad_fingers),
-            'feedback_samples': len(self.feedback_history)
-        }
-        
-        # Reset the flag
-        self.just_completed = False
-        
-        return data
     
     def _is_good_form(self, feedback_list):
         """
@@ -832,32 +775,22 @@ class VideoCamera:
         results = hands.process(rgb_frame)
         
         exercise = None
-        all_feedback = []  # Combined feedback from both hands
         
-        if results.multi_hand_landmarks and results.multi_handedness:
-            hands_data = []  # Store data for each hand
-            
-            for idx, (hand_landmarks, handedness) in enumerate(zip(results.multi_hand_landmarks, results.multi_handedness)):
-                # Determine if Left or Right hand
-                hand_label = handedness.classification[0].label  # "Left" or "Right"
-                
+        if results.multi_hand_landmarks:
+            for hand_landmarks in results.multi_hand_landmarks:
                 landmarks = list(hand_landmarks.landmark)
                 features = extract_features(landmarks)
                 features_scaled = scaler.transform([features])
                 
                 raw_pred = model.predict(features_scaled)[0]
-                detected_exercise = stabilizer.add_prediction(raw_pred)
-                
-                # Use the first detected exercise as the primary one
-                if not exercise:
-                    exercise = detected_exercise
+                exercise = stabilizer.add_prediction(raw_pred)
                 
                 bad_fingers = set()
-                if detected_exercise:
-                    feedback_func = FEEDBACK_FUNCTIONS.get(detected_exercise, default_feedback)
+                if exercise:
+                    feedback_func = FEEDBACK_FUNCTIONS.get(exercise, default_feedback)
                     raw_feedback, bad_fingers = feedback_func(landmarks)
+                    timer_status = intelligent_timer.update(exercise, raw_feedback)
                     
-                    # Process feedback for this hand
                     raw_feedback_items = []
                     for i, fb in enumerate(raw_feedback):
                         is_good = any(w in fb.lower() for w in ['good', 'great', 'properly', 'correctly', 'maintain', 'excellent', 'perfect', 'aligned', 'attached', 'maintaned'])
@@ -873,65 +806,27 @@ class VideoCamera:
                     else:
                         selected_items = [primary_item]
                     
-                    # Add hand label to feedback
-                    hand_feedback = []
+                    final_items = []
                     seen_texts = set()
                     for item in selected_items:
                         if item['text'] not in seen_texts:
-                            hand_feedback.append({
-                                'text': f"{hand_label}: {get_text(item['text'])}",
-                                'type': 'good' if item['is_good'] else 'warning',
-                                'hand': hand_label
+                            final_items.append({
+                                'text': get_text(item['text']),
+                                'type': 'good' if item['is_good'] else 'warning'
                             })
                             seen_texts.add(item['text'])
                     
-                    all_feedback.extend(hand_feedback)
-                    hands_data.append({
-                        'hand_label': hand_label,
-                        'landmarks': landmarks,
-                        'bad_fingers': bad_fingers,
-                        'raw_feedback': raw_feedback
-                    })
+                    with self.lock:
+                        self.current_exercise = exercise
+                        self.current_feedback = final_items
+                        self.timer_status = timer_status
                 else:
-                    hands_data.append({
-                        'hand_label': hand_label,
-                        'landmarks': landmarks,
-                        'bad_fingers': set(),
-                        'raw_feedback': []
-                    })
-            
-            # Update timer with combined feedback from all hands
-            combined_bad_fingers = set()
-            for hand_data in hands_data:
-                combined_bad_fingers.update(hand_data['bad_fingers'])
-            
-            if exercise and hands_data:
-                # Use the first hand's raw feedback for timer (or combine if needed)
-                timer_status = intelligent_timer.update(exercise, hands_data[0]['raw_feedback'], combined_bad_fingers)
+                    timer_status = intelligent_timer.update(None, [])
+                    with self.lock:
+                        self.timer_status = timer_status
                 
-                # Check if timer just completed - log to session!
-                completion_data = intelligent_timer.get_completion_data()
-                if completion_data and session_manager.is_session_active():
-                    session_manager.log_exercise_attempt(
-                        exercise_name=completion_data['exercise'],
-                        completed=True,
-                        form_quality=completion_data['form_quality'],
-                        duration=completion_data['duration'],
-                        detailed_feedback={'bad_fingers': completion_data['bad_fingers']}
-                    )
-                    print(f"✓ Logged exercise: {completion_data['exercise']}, Quality: {completion_data['form_quality']:.0f}%")
-            else:
-                timer_status = intelligent_timer.update(None, [])
-            
-            # Update camera state
-            with self.lock:
-                self.current_exercise = exercise
-                self.current_feedback = all_feedback if all_feedback else []
-                self.timer_status = timer_status
-            
-            # Draw all hands with color-coded landmarks
-            for hand_data in hands_data:
-                draw_custom_landmarks(frame, hand_data['landmarks'], hand_data['bad_fingers'])
+                # Draw landmarks with dynamic coloring
+                draw_custom_landmarks(frame, landmarks, bad_fingers)
         else:
             timer_status = intelligent_timer.update(None, [])
             with self.lock:
@@ -1003,110 +898,6 @@ def get_status():
             'is_running': camera.is_running,
             'timer': camera.timer_status
         })
-
-# ============= SESSION ENDPOINTS =============
-@app.route('/start_session', methods=['POST'])
-def start_session():
-    """Start a new rehabilitation session"""
-    data = request.json or {}
-    patient_id = data.get('patient_id', None)
-    session_id = session_manager.start_session(patient_id)
-    return jsonify({
-        'status': 'success',
-        'session_id': session_id,
-        'message': 'Session started successfully'
-    })
-
-@app.route('/end_session', methods=['POST'])
-def end_session():
-    """End the current session and return summary"""
-    if not session_manager.is_session_active():
-        return jsonify({'status': 'error', 'message': 'No active session'}), 400
-    
-    summary = session_manager.end_session()
-    return jsonify({
-        'status': 'success',
-        'summary': summary
-    })
-
-@app.route('/log_exercise', methods=['POST'])
-def log_exercise():
-    """Log an exercise attempt"""
-    if not session_manager.is_session_active():
-        return jsonify({'status': 'error', 'message': 'No active session'}), 400
-    
-    data = request.json
-    exercise_name = data.get('exercise_name')
-    completed = data.get('completed', False)
-    form_quality = data.get('form_quality', 0.0)
-    duration = data.get('duration', None)
-    
-    session_manager.log_exercise_attempt(exercise_name, completed, form_quality, duration)
-    return jsonify({'status': 'success'})
-
-@app.route('/session_history', methods=['GET'])
-def get_session_history():
-    """Get recent session history"""
-    limit = request.args.get('limit', 10, type=int)
-    history = session_manager.get_session_history(limit)
-    return jsonify({
-        'status': 'success',
-        'sessions': history
-    })
-
-@app.route('/exercise_progress/<exercise_name>', methods=['GET'])
-def get_exercise_progress(exercise_name):
-    """Get progress for a specific exercise"""
-    progress = session_manager.get_exercise_progress(exercise_name)
-    return jsonify({
-        'status': 'success',
-        'progress': progress
-    })
-
-@app.route('/session_status', methods=['GET'])
-def get_session_status():
-    """Check if a session is active"""
-    return jsonify({
-        'active': session_manager.is_session_active(),
-        'session_id': session_manager.current_session['session_id'] if session_manager.is_session_active() else None
-    })
-
-@app.route('/generate_report', methods=['POST'])
-def generate_report():
-    """Generate and download physiotherapist report for the last session"""
-    data = request.json or {}
-    
-    # Get the most recent session
-    history = session_manager.get_session_history(limit=1)
-    if not history:
-        return jsonify({'status': 'error', 'message': 'No sessions found'}), 404
-    
-    latest_session = history[-1]
-    
-    # Generate report text
-    report_text = generate_physiotherapist_report(latest_session)
-    
-    # Optionally export to file
-    if data.get('export_file', False):
-        filename = export_report_to_file(latest_session)
-        return jsonify({
-            'status': 'success',
-            'report': report_text,
-            'filename': filename
-        })
-    
-    return jsonify({
-        'status': 'success',
-        'report': report_text
-    })
-
-@app.route('/export_session_data', methods=['GET'])
-def export_session_data():
-    """Export all session data as JSON"""
-    return jsonify({
-        'status': 'success',
-        'data': session_manager.data
-    })
 
 if __name__ == '__main__':
     os.makedirs('templates', exist_ok=True)
